@@ -1,11 +1,18 @@
 {
   "name": "zhihu-terminator",
   "version": "1.0.0",
-  "description": "",
+  "description": "Goodbye, Zhihu.",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prettier": "prettier ./src/**/*.ts ./*.js --write",
+    "start": "ts-node ./src/index.ts"
   },
   "author": "",
-  "license": "ISC"
+  "license": "MIT",
+  "dependencies": {
+    "playwright": "^1.7.1",
+    "prettier": "^2.2.1",
+    "ts-node": "^9.1.1",
+    "typescript": "^4.1.3"
+  }
 }
