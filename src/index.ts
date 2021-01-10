@@ -267,13 +267,17 @@ async function unVoteAllAnswersOrArticle(page: Page, username: string) {
                 continue;
             }
 
-            const voteButton = await page.waitForSelector(
-                '.ContentItem-actions .VoteButton--up.is-active'
-            );
-            await voteButton.dispatchEvent('click');
-            await page.waitForSelector(
-                '.ContentItem-actions .VoteButton--up:not(.is-active)'
-            );
+            try {
+                const voteButton = await page.waitForSelector(
+                    '.ContentItem-actions .VoteButton--up.is-active'
+                );
+                await voteButton.dispatchEvent('click');
+                await page.waitForSelector(
+                    '.ContentItem-actions .VoteButton--up:not(.is-active)'
+                );
+            } catch {
+                // ignore if cannot find vote
+            }
             await page.waitForTimeout(350);
         }
     }
@@ -287,6 +291,7 @@ async function main() {
     const context = await browser.newContext();
     context.addCookies(cookies);
     const page = await context.newPage();
+    await context.route('**/*.{png,jpg,jpeg}', route => route.abort());
 
     try {
         const username = await fetchProfile(page);
