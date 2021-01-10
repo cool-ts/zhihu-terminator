@@ -1,6 +1,6 @@
 # zhihu-terminator
 
-### ALERT: All articles will be removed <span style="color: RED">**without backup**</span>
+#### ALERT: All articles will be removed **without backup**
 
 1. yarn
 2. yarn start
