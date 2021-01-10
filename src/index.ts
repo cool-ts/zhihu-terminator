@@ -176,6 +176,7 @@ async function deleteAllFollowingQuestions(page: Page, username: string) {
             }
 
             await followButton.click();
+            await page.waitForTimeout(350);
             await page.goBack();
         } catch (e) {
             console.log('cannot unfollow questions anymore');
