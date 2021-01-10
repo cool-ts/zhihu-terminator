@@ -68,7 +68,7 @@ async function findDeleteButton(
     items: ElementHandle<SVGElement | HTMLElement>[]
 ) {
     for (const item of items.reverse()) {
-        const textContent = await item.evaluate(node => node.textContent);
+        const textContent = await item.textContent();
         if (textContent?.trim() === '删除') {
             return item;
         }
@@ -169,9 +169,7 @@ async function deleteAllFollowingQuestions(page: Page, username: string) {
             const followButton = await page.waitForSelector(
                 '.QuestionHeader .QuestionButtonGroup .FollowButton'
             );
-            const followButtonTextContent = await followButton.evaluate(
-                node => node.textContent
-            );
+            const followButtonTextContent = await followButton.textContent();
             if (followButtonTextContent !== '已关注') {
                 await page.goBack();
                 continue;
@@ -269,9 +267,14 @@ async function unVoteAllAnswersOrArticle(page: Page, username: string) {
                 continue;
             }
 
-            const voteButton = await page.waitForSelector('.VoteButton--up');
+            const voteButton = await page.waitForSelector(
+                '.ContentItem-actions .VoteButton--up.is-active'
+            );
             await voteButton.dispatchEvent('click');
-            await page.waitForTimeout(500);
+            await page.waitForSelector(
+                '.ContentItem-actions .VoteButton--up:not(.is-active)'
+            );
+            await page.waitForTimeout(350);
         }
     }
 }
@@ -288,9 +291,9 @@ async function main() {
     try {
         const username = await fetchProfile(page);
         await unVoteAllAnswersOrArticle(page, username);
-        // await deleteAllFollowingQuestions(page, username);
-        // await deleteAllAnswers(page, username);
-        // await deleteAllPins(page, username);
+        await deleteAllFollowingQuestions(page, username);
+        await deleteAllAnswers(page, username);
+        await deleteAllPins(page, username);
     } finally {
         page.close();
         browser.close();
