@@ -315,7 +315,42 @@ async function unFollowAllTopics(page: Page, username: string) {
                 '.TopicActions-followButton.Button--blue'
             );
         } catch (e) {
-            console.log('cannot delete answers anymore');
+            console.log('cannot unfollow topics anymore');
+            return;
+        }
+    }
+}
+
+async function unFollowAllCollestions(page: Page, username: string) {
+    const topics = `https://www.zhihu.com/people/${username}/following/collections`;
+
+    while (true) {
+        try {
+            await page.goto(topics);
+
+            const oneTopic = await page.waitForSelector(
+                '.List#Profile-following .ContentItem'
+            );
+            const topicLink = await oneTopic.$eval(
+                '.ContentItem-title a',
+                (node: HTMLAnchorElement) => node.href
+            );
+            assertDef(topicLink);
+            await page.goto(topicLink);
+
+            const followButton = await page.$(
+                '.CollectionDetailPageHeader-actions .FollowButton.Button--grey'
+            );
+            if (!followButton) {
+                continue;
+            }
+
+            await followButton.click();
+            await page.waitForSelector(
+                '.CollectionDetailPageHeader-actions .FollowButton.Button--blue'
+            );
+        } catch (e) {
+            console.log('cannot unfollow collections anymore');
             return;
         }
     }
@@ -337,6 +372,7 @@ async function main() {
     try {
         const username = await fetchProfile(page);
         console.log('fetchProfile Done');
+        await unFollowAllCollestions(page, username);
         await unFollowAllTopics(page, username);
         await unVoteAllAnswersOrArticle(page, username);
         await deleteAllFollowingQuestions(page, username);
