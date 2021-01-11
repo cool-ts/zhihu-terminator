@@ -322,21 +322,21 @@ async function unFollowAllTopics(page: Page, username: string) {
 }
 
 async function unFollowAllCollestions(page: Page, username: string) {
-    const topics = `https://www.zhihu.com/people/${username}/following/collections`;
+    const collections = `https://www.zhihu.com/people/${username}/following/collections`;
 
     while (true) {
         try {
-            await page.goto(topics);
+            await page.goto(collections);
 
-            const oneTopic = await page.waitForSelector(
+            const oneCollection = await page.waitForSelector(
                 '.List#Profile-following .ContentItem'
             );
-            const topicLink = await oneTopic.$eval(
+            const collectionLink = await oneCollection.$eval(
                 '.ContentItem-title a',
                 (node: HTMLAnchorElement) => node.href
             );
-            assertDef(topicLink);
-            await page.goto(topicLink);
+            assertDef(collectionLink);
+            await page.goto(collectionLink);
 
             const followButton = await page.$(
                 '.CollectionDetailPageHeader-actions .FollowButton.Button--grey'
@@ -356,6 +356,32 @@ async function unFollowAllCollestions(page: Page, username: string) {
     }
 }
 
+async function deleteAllCollections(page: Page) {
+    const collections = `https://www.zhihu.com/collections/mine`;
+
+    while (true) {
+        try {
+            await page.goto(collections);
+
+            const oneCollection = await page.waitForSelector(
+                '.Card.SelfCollectionItem'
+            );
+            const deleteButton = await oneCollection.$('svg.Zi--Trash');
+            assertDef(deleteButton, 'Cannot find settings button');
+            await deleteButton.dispatchEvent('click');
+
+            const confirmButton = await page.waitForSelector(
+                '.Modal--default .Button.Button--primary'
+            );
+            await confirmButton.click();
+            await page.waitForTimeout(500);
+        } catch (e) {
+            console.log('cannot unfollow collections anymore');
+            return;
+        }
+    }
+}
+
 async function main() {
     const cookies = await waitUntilLogin();
     const browser = await firefox.launch({
@@ -364,10 +390,7 @@ async function main() {
     const context = await browser.newContext();
     context.addCookies(cookies);
     const page = await context.newPage();
-    await context.route(
-        url => url.pathname.endsWith('.jpg') || url.pathname.endsWith('.png'),
-        route => route.abort()
-    );
+    await context.route('**/*.{png,jpg,jpeg}', route => route.abort());
 
     try {
         const username = await fetchProfile(page);
@@ -375,9 +398,10 @@ async function main() {
         await unFollowAllCollestions(page, username);
         await unFollowAllTopics(page, username);
         await unVoteAllAnswersOrArticle(page, username);
+        await deleteAllCollections(page);
         await deleteAllFollowingQuestions(page, username);
-        await deleteAllAnswers(page, username);
         await deleteAllPins(page, username);
+        await deleteAllAnswers(page, username);
     } finally {
         page.close();
         browser.close();
