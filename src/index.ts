@@ -77,9 +77,10 @@ async function findDeleteButton(
 }
 
 async function deleteAllAnswers(page: Page, username: string) {
+    const answers = `https://www.zhihu.com/people/${username}/answers`;
+
     while (true) {
         try {
-            const answers = `https://www.zhihu.com/people/${username}/answers`;
             await page.goto(answers);
 
             const oneAnswer = await page.waitForSelector(
@@ -107,9 +108,10 @@ async function deleteAllAnswers(page: Page, username: string) {
 }
 
 async function deleteAllPins(page: Page, username: string) {
+    const pins = `https://www.zhihu.com/people/${username}/pins`;
+
     while (true) {
         try {
-            const pins = `https://www.zhihu.com/people/${username}/pins`;
             await page.goto(pins);
 
             const onePin = await page.waitForSelector(
@@ -284,6 +286,41 @@ async function unVoteAllAnswersOrArticle(page: Page, username: string) {
     }
 }
 
+async function unFollowAllTopics(page: Page, username: string) {
+    const topics = `https://www.zhihu.com/people/${username}/following/topics`;
+
+    while (true) {
+        try {
+            await page.goto(topics);
+
+            const oneTopic = await page.waitForSelector(
+                '.List#Profile-following .ContentItem'
+            );
+            const topicLink = await oneTopic.$eval(
+                'a.TopicLink',
+                (node: HTMLAnchorElement) => node.href
+            );
+            assertDef(topicLink);
+            await page.goto(topicLink);
+
+            const followButton = await page.$(
+                '.TopicActions-followButton.Button--grey'
+            );
+            if (!followButton) {
+                continue;
+            }
+
+            await followButton.click();
+            await page.waitForSelector(
+                '.TopicActions-followButton.Button--blue'
+            );
+        } catch (e) {
+            console.log('cannot delete answers anymore');
+            return;
+        }
+    }
+}
+
 async function main() {
     const cookies = await waitUntilLogin();
     const browser = await firefox.launch({
@@ -292,10 +329,15 @@ async function main() {
     const context = await browser.newContext();
     context.addCookies(cookies);
     const page = await context.newPage();
-    await context.route('**/*.{png,jpg,jpeg}', route => route.abort());
+    await context.route(
+        url => url.pathname.endsWith('.jpg') || url.pathname.endsWith('.png'),
+        route => route.abort()
+    );
 
     try {
         const username = await fetchProfile(page);
+        console.log('fetchProfile Done');
+        await unFollowAllTopics(page, username);
         await unVoteAllAnswersOrArticle(page, username);
         await deleteAllFollowingQuestions(page, username);
         await deleteAllAnswers(page, username);
